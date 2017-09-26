@@ -8,12 +8,10 @@ from vqa.preprocess_data.vqa_nlp_processor import VQAAnswerProcessor
 use_100 = False
 
 
-
-
 class Picture:
     def __init__(self, id, image_loader):
         self.id = id
-             self.url = "http://mscoco.org/images/{}".format(id)
+        self.url = "http://mscoco.org/images/{}".format(id)
         self.filename = str(id).zfill(12) + ".jpg"
 
         if image_loader is not None:
@@ -170,10 +168,3 @@ if __name__ == '__main__':
 
 
 
-
-
-                    # dataset = VQADataset("/home/fstrub/Projects/vqa_data", year=2017, which_set="val")
-    # print(dataset.question_types)
-    # print(dataset.answer_counter.most_common(20))
-    # for i in range(35, 52):
-    #     print(dataset.games[i])

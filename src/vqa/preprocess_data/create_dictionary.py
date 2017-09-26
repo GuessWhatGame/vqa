@@ -16,8 +16,8 @@ if __name__ == '__main__':
     data_dir = '/data/lisa/data/vqa'
     year = '2014'
 
-    train_dataset = VQADataset(data_dir, year, "train")
-    valid_dataset = VQADataset(data_dir, year, "val")
+    train_dataset = VQADataset(data_dir, year, "train", preprocess_answers=preprocess_answers)
+    valid_dataset = VQADataset(data_dir, year, "val", preprocess_answers=preprocess_answers)
 
     answer_counters = train_dataset.answer_counter.most_common() + valid_dataset.answer_counter.most_common()
     games = train_dataset.games + valid_dataset.games
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     save_file = data_dir + "/dict_vqa_"+ str(year) +"_" + str(keep_top_answers) + "answers2.json"
     with io.open(save_file, 'w', encoding='utf8') as f_out:
-       data = json.dumps({'word2i': word2i, 'answer2i': answer2i})
+       data = json.dumps({'word2i': word2i, 'answer2i': answer2i, "preprocess_answers": preprocess_answers})
        f_out.write(data)
        #f_out.write(unicode(data))
 

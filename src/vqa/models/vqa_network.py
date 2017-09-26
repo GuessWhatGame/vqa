@@ -1,14 +1,18 @@
-from tensorflow.python.ops.init_ops import RandomUniform
-
-from guesswhat.models.abstract_model import *
-from guesswhat.models import rnn, utils, resnet, attention
-from guesswhat.models.conditional_bn import ConditionalBatchNorm
+import tensorflow as tf
 
 
-# 0.5217136
+from generic.tf_models import rnn, utils, attention
+
+from vqa.models.resnet_model import ResnetModel
+from vqa.models.cbn_pluggin import CBNfromLSTM
+
+from conditional_batch_norm.conditional_bn import ConditionalBatchNorm
+from conditional_batch_norm.resnet import create_resnet
+
+
 class VQANetwork(ResnetModel):
     def __init__(self, config, no_words, no_answers, image_input, reuse=False, device=''):
-        AbstractModel.__init__(self, "vqa", device=device)
+        ResnetModel.__init__(self, "vqa", device=device)
 
         with tf.variable_scope(self.scope_name, reuse=reuse) as scope_name:
 
@@ -23,6 +27,8 @@ class VQANetwork(ResnetModel):
             self._seq_length = tf.placeholder(tf.int32, [self.batch_size], name='seq_length')
             self._answer_count = tf.placeholder(tf.float32, [self.batch_size, no_answers], name='answer_count')
 
+            self._picture = tf.placeholder(tf.float32, [self.batch_size] + config['model']['image']["dim"], name='picture')
+
             self._is_training = tf.placeholder(tf.bool, name="is_training")
 
             dropout_keep = float(config.get("dropout_keep_prob", 1.0))
@@ -36,15 +42,9 @@ class VQANetwork(ResnetModel):
                                            scope="word_embedding")
 
             if 'glove' in config and config['glove']:
-                print("using GLOVE")
-                embed_b = tf.get_variable("biases", [int(config["word_embedding_dim"])])
-                word_emb = tf.nn.tanh(word_emb + embed_b)
                 self._glove = tf.placeholder(tf.float32, [None, None, 300], name="glove")
                 word_emb = tf.concat([word_emb, self._glove], axis=2)
 
-
-
-            # word_emb = tf.nn.dropout(word_emb, dropout_keep)
 
             self.question_lstm, self.all_lstm_states = rnn.variable_length_LSTM(
                 word_emb,
@@ -64,60 +64,28 @@ class VQANetwork(ResnetModel):
                     or image_input == "fc7" \
                     or image_input == "dummy":
 
-                self._picture = tf.placeholder(tf.float32, [self.batch_size, config["fc_dim"]], name='picture')
-
                 self.picture_out = self._picture
                 if config["normalize"]:
                     self.picture_out = tf.nn.l2_normalize(self._picture, dim=1, name="fc_normalization")
 
             elif image_input.startswith("conv") or image_input == "raw":
 
-                self._picture = tf.placeholder(tf.float32, [self.batch_size,
-                                                              config['image']['height'],
-                                                              config['image']['width'],
-                                                              config['image']['channel']],
-                                                 name='picture')
-
                 if image_input == "raw":
                     cbn = None
                     if config["cbn"]["use_cbn"]:
-
-                        cbn_mode=config["cbn"]["mode"]
-                        if cbn_mode == "LSTM":
-                            shared = config['cbn'].get("shared", False)
-                            cbn_network_builder = resnet.CBNfromLSTM(self.question_lstm, config['cbn'],
-                                                                     use_shared=shared)
-
-                        elif cbn_mode == "LSTMandFM":
-                            cbn_network_builder = resnet.CBNfromLSTMandFM(self.question_lstm, dropout_keep, config["cbn"])
-                        elif cbn_mode == "LSTMandAvgFM":
-                            cbn_network_builder = resnet.CBNfromLSTMandAvgFM(self.question_lstm, config["cbn"])
-                        elif cbn_mode == "CBNfromFMtoAccLSTM":
-                            cbn_network_builder = resnet.CBNfromFMtoAccLSTM(self.all_lstm_states, dropout_keep, config["cbn"])
-                        elif cbn_mode == "CBNfromLSTMandFM_3":
-                            cbn_network_builder = resnet.CBNfromLSTMandFM_3(self.question_lstm, dropout_keep, config["cbn"])
-                        elif cbn_mode == "UnrolledLSTM":
-                            self.seq_mask = tf.placeholder(tf.float32, [None, None], name="seq_mask")
-                            cbn_network_builder = resnet.CBNfromUnrolledLSTM(self.all_lstm_states, self.seq_mask, config["cbn"])
-                        else:
-                            assert False
+                        cbn_factory = CBNfromLSTM(self.question_lstm, config['cbn'])
 
                         excluded_scopes = []
                         if 'excluded_scope_names' in config:
-                            excluded_scopes = config['excluded_scope_names']
+                            excluded_scopes = config.get('excluded_scope_names', [])
 
-                        apply_bn_before_cbn = False
-                        if 'apply_bn_before_cbn' in config['cbn']:
-                            apply_bn_before_cbn = config["cbn"]['apply_bn_before_cbn']
-
-                        cbn = ConditionalBatchNorm(cbn_network_builder, excluded_scope_names=excluded_scopes,
-                                                                        is_training=self._is_training,
-                                                                        apply_bn_before_cbn=apply_bn_before_cbn)
+                        cbn = ConditionalBatchNorm(cbn_factory, excluded_scope_names=excluded_scopes,
+                                                                        is_training=self._is_training)
                     resnet_version = 50
                     if 'resnet_version' in config:
                         resnet_version = config['resnet_version']
 
-                    picture_feature_maps = resnet.create_resnet(self._picture,
+                    picture_feature_maps = create_resnet(self._picture,
                                                                 is_training=self._is_training,
                                                                 scope=scope_name.name,
                                                                 cbn=cbn,
@@ -129,24 +97,10 @@ class VQANetwork(ResnetModel):
                 else:
                     picture_feature_maps = self._picture
 
-                attention_mode = config['attention']["mode"]
-                if attention_mode == "none":
-                    self.picture_out = tf.reduce_mean(picture_feature_maps, axis=(1, 2))
-                elif attention_mode == "classic":
-                    print("classic")
-                    self.picture_out = attention.compute_attention(picture_feature_maps,
-                                                                   self.question_lstm,
-                                                                   no_mlp_units=config['attention']['no_attention_mlp'])
-                elif attention_mode == "glimpse":
-                    self.picture_out = attention.compute_glimpse(picture_feature_maps,
-                                                                 self.question_lstm,
-                                                                 no_glims=config['attention']['no_glimpses'],
-                                                                 glimse_embedding_size=config['attention']['no_attention_mlp'],
-                                                                 keep_dropout=dropout_keep)
-                else:
-                    assert False
+                # apply attention
+                self.picture_out = attention.attention_factory(picture_feature_maps, self.question_lstm, config["image"]["attention"])
             else:
-                assert False
+                assert False, "Wrong input type for image"
 
             #####################
             #   COMBINE
@@ -166,9 +120,6 @@ class VQANetwork(ResnetModel):
 
             # improve soft loss
             answer_count = tf.minimum(self._answer_count, 3)
-            #answer_count = tf.where(tf.greater(self._answer_count, 2),
-            #                        self._answer_count,
-            #                        tf.zeros_like(self._answer_count)) # cf MUTAN loss
 
 
             normalizing_sum = tf.maximum(1.0, tf.reduce_sum(answer_count, 1, keep_dims=True))
@@ -208,17 +159,3 @@ class VQANetwork(ResnetModel):
             print('Model... build!')
 
 
-if __name__ == '__main__':
-    num_words = 1000
-    num_answer = 200
-    image_input = "fc8"
-    config_model = {
-        "fc8_dim": 2048,
-        "word_embedding_dim": 256,
-        "no_hidden_LSTM": 1024,
-        "no_hidden_fc8_mlp": 1024,
-        "no_hidden_final_mlp": 1024,
-        "no_answer": 1000
-    }
-
-    network = VQANetwork(config_model, no_words=num_words, image_input=image_input)

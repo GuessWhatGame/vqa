@@ -7,13 +7,12 @@ from generic.data_provider.batchifier import AbstractBatchifier
 
 class VQABatchifier(AbstractBatchifier):
 
-    def __init__(self, tokenizer, sources, glove=None, remove_unknown=False, answer_type=None, improve_soft_loss=False):
+    def __init__(self, tokenizer, sources, glove=None, remove_unknown=False, answer_type=None):
         self.tokenizer = tokenizer
         self.remove_unknown = remove_unknown
         self.answer_type = answer_type
         self.sources = sources
         self.glove = glove
-        self.improve_soft_loss = improve_soft_loss
 
         # should be moved somewehere else
         assert 'glove' not in sources or glove is not None

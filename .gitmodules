@@ -4,3 +4,6 @@
 [submodule "src/generic"]
 	path = src/generic
 	url = https://github.com/GuessWhatGame/generic
+[submodule "src/vqa_eval"]
+	path = src/vqa_eval
+	url = https://github.com/VT-vision-lab/VQA
