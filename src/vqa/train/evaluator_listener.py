@@ -47,7 +47,7 @@ class VQADumperListener(EvaluatorListener):
             with zipfile.ZipFile(zip_path, 'w') as myzip:
                 myzip.write(json_path, json_name, zipfile.ZIP_DEFLATED)
 
-            self.out_path(json_path)
+            self.out_path = json_path
 
             self.counter += 1
 
