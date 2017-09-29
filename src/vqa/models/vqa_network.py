@@ -1,13 +1,10 @@
 import tensorflow as tf
 
-
-from generic.tf_models import rnn, utils, attention
-
-from vqa.models.resnet_model import ResnetModel
-from vqa.models.cbn_pluggin import CBNfromLSTM
-
+from conditional_batch_norm.cbn_pluggin import CBNfromLSTM
 from conditional_batch_norm.conditional_bn import ConditionalBatchNorm
 from conditional_batch_norm.resnet import create_resnet
+from generic.tf_models import rnn, utils, attention
+from vqa.models.resnet_model import ResnetModel
 
 
 class VQANetwork(ResnetModel):
