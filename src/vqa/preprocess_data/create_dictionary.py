@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument("-min_occ", type=int, default=2,
                         help='Minimum number of occurences to add word to dictionary')
     parser.add_argument("-ans_to_keep", type=int, default=2000, help='Number of answers to keep')
-    parser.add_argument("-ans_preprocess", type=lambda x:bool(strtobool(x)), default="False", help='preprocess answers')
+    parser.add_argument("-ans_preprocess", type=lambda x:bool(strtobool(x)), default="False", help='preprocess answers (higher accuracy but slow start)')
     parser.add_argument("-merge_val", type=lambda x:bool(strtobool(x)), default="False", help='Fuse train/val dataset')
 
     args = parser.parse_args()
