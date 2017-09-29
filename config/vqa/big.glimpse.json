@@ -7,26 +7,27 @@
     "cbn":
     {
       "use_cbn": true,
-      "upsampling": 256,
-      "mode" : "LSTM",
-      "cbn_embedding_size": 512,
-      "shared": false
+      "cbn_embedding_size": 512
     },
 
     "image":
     {
-      "height": 448,
-      "width": 448,
-      "channel": 3
+      "image_input": "raw",
+      "dim": [224, 224, 3],
+      "normalize": true,
+
+      "attention" : {
+        "mode": "glimpse",
+        "no_attention_mlp": 512,
+        "no_glimpses": 2
+      }
     },
 
     "glove": true,
-    "glove_dim": 300,
-    "normalize_conv_feat": true,
 
     "word_embedding_dim": 300,
-    "no_hidden_LSTM": 1024,
-    "no_LSTM_cell": 2,
+    "no_hidden_LSTM": 512,
+    "no_LSTM_cell": 1,
 
     "no_question_mlp": 1024,
     "no_picture_mlp": 1024,
@@ -34,27 +35,24 @@
     "no_hidden_final_mlp": 1024,
     "dropout_keep_prob": 0.5,
 
-    "attention" : {
-      "mode": "glimpse",
-      "no_attention_mlp": 512,
-      "no_glimpses": 2
-    },
+
 
     "resnet_version": 50,
 
     "loss": "soft",
     "activation": "tanh",
-    "excluded_scope_names": ["resnet_v1_50/conv1", "shortcut", "block1"]
+    "excluded_scope_names": ["resnet_v1_50/conv1", "shortcut", "block1"],
+    "finetune" : []
   },
 
   "optimizer": {
-    "no_epoch": 20,
+    "no_epoch": 1,
     "learning_rate": 3e-4,
     "batch_size": 20,
     "clip_val": 5
   },
 
-  "dico_name" : "dict_vqa_2014_2000answers_preprocessed.json",
-  "merge_dataset": true,
+  "dico_name" : "dict.json",
+  "merge_dataset": false,
   "seed": -1
 }

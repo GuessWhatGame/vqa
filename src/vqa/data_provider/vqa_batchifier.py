@@ -44,9 +44,9 @@ class VQABatchifier(AbstractBatchifier):
             batch['question'].append(question)
 
             if 'glove' in self.sources:
-                # Add glove vectors
+                # Add glove vectors (NB even <unk> may have a specific glove)
                 words = self.tokenizer.tokenize_question(game.question)
-                glove_vectors = self.glove.get_embeddings(words)
+                glove_vectors = self.glove.get_embeddings(words) # slow (copy gloves in process)
                 batch['glove'].append(glove_vectors)
 
             # Get answers

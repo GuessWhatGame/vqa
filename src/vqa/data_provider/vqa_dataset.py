@@ -3,8 +3,7 @@ import json
 import os
 
 from generic.data_provider.dataset import AbstractDataset
-from vqa.preprocess_data.vqa_nlp_processor import VQAAnswerProcessor
-
+from vqa_eval.PythonEvaluationTools.vqaEvaluation.vqaEval import VQAEval
 use_100 = False
 
 
@@ -12,14 +11,13 @@ class Picture:
     def __init__(self, id, image_loader):
         self.id = id
         self.url = "http://mscoco.org/images/{}".format(id)
-        self.filename = str(id).zfill(12) + ".jpg"
+        self.filename = str(id).zfill(12)
 
         if image_loader is not None:
             self.image_loader = image_loader.preload(id)
-            self.file = os.path.join(image_loader.img_dir, self.filename)
 
     def get_image(self):
-        return self.image_loader.get_image(self.file)
+        return self.image_loader.get_image(self.filename)
 
 
 class Game(object):
@@ -36,6 +34,22 @@ class Game(object):
         return "[#q:{}, #p:{}] {} - {} ({})".format(self.id, self.picture.id, self.question, self.majority_answer, self.answer_type)
 
 
+# VQA have some specific answer preprocessing that we apply here
+dummy_vqa = lambda: None
+dummy_vqa.getQuesIds = lambda: None
+vqa_eval = VQAEval(dummy_vqa, None)
+def process_answers(answer):
+
+    answer = answer.replace('\n', ' ')
+    answer = answer.replace('\t', ' ')
+    answer = answer.strip()
+    answer = vqa_eval.processPunctuation(answer)
+    answer = vqa_eval.processDigitArticle(answer)
+
+    return answer
+
+
+
 class VQADataset(AbstractDataset):
     """Loads the dataset."""
 
@@ -49,8 +63,6 @@ class VQADataset(AbstractDataset):
 
         self.answer_counter = collections.Counter()
         self.answer_types = collections.Counter()
-
-        vqa_preprocessor = VQAAnswerProcessor()
 
         with open(annotations_path_file) as annotations_file:
             with open(questions_path_file) as questions_file:
@@ -82,8 +94,8 @@ class VQADataset(AbstractDataset):
                     answer_type = annotation["answer_type"]
 
                     if preprocess_answers:
-                        majority_answer = vqa_preprocessor.preprocess_answers(majority_answer)
-                        answers = [vqa_preprocessor.preprocess_answers(a) for a in answers]
+                        majority_answer = process_answers(majority_answer)
+                        answers = [process_answers(a) for a in answers]
 
                     for a in answers:
                         self.answer_counter[a] += 1

@@ -24,7 +24,7 @@ class CBNfromLSTM(CBNAbtract):
         self.cbn_embedding_size = config['cbn_embedding_size']
         self.use_betas = use_betas
         self.use_gammas = use_gammas
-        self.use_shared = (use_gammas or use_betas) and use_shared
+
 
     def create_cbn_input(self, feature_maps):
         no_features = int(feature_maps.get_shape()[3])

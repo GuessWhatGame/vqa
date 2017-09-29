@@ -1,33 +1,17 @@
 from nltk.tokenize import TweetTokenizer
 import json
 import re
-import os
-
 
 class VQATokenizer:
     """ """
-    def __init__(self, dictionary_file, use_mcb_tokenizer=False):
+    def __init__(self, dictionary_file):
 
-        if use_mcb_tokenizer:
-            self.tokenizer_fn = seq_to_list
-            data_dir = os.path.dirname(dictionary_file)
-
-            vdict_path = os.path.join(data_dir, 'vdict.json')
-            with open(vdict_path) as f:
-                self.word2i = json.load(f)
-                self.word2i['<unk>'] = self.word2i['']
-
-            adict_path = os.path.join(data_dir, 'adict.json')
-            with open(adict_path) as f:
-                self.answer2i = json.load(f)
-                self.answer2i['<unk>'] = self.answer2i['']
-
-        else:
-            self.tokenizer_fn = TweetTokenizer(preserve_case=False).tokenize
-            with open(dictionary_file, 'r') as f:
-                data = json.load(f)
-                self.word2i = data['word2i']
-                self.answer2i = data['answer2i']
+        self.tokenizer = TweetTokenizer(preserve_case=False)
+        with open(dictionary_file, 'r') as f:
+            data = json.load(f)
+            self.word2i = data['word2i']
+            self.answer2i = data['answer2i']
+            self.preprocess_answers = data['preprocess_answers']
 
         self.dictionary_file = dictionary_file
 
@@ -49,13 +33,14 @@ class VQATokenizer:
         self.unknown_answer = self.answer2i["<unk>"]
 
 
+
     """
     Input: String
     Output: List of tokens
     """
     def encode_question(self, question):
         tokens = []
-        for token in self.tokenizer_fn(question):
+        for token in self.tokenizer.tokenize(question):
             if token not in self.word2i:
                 token = '<unk>'
             tokens.append(self.word2i[token])
@@ -73,7 +58,7 @@ class VQATokenizer:
         return self.i2answer[answer_id]
 
     def tokenize_question(self, question):
-        return self.tokenizer_fn(question)
+        return self.tokenizer.tokenize(question)
 
 
 def seq_to_list(s):

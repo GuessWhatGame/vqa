@@ -1,8 +1,9 @@
 import argparse
-import pickle
 import logging
 import os
 import tensorflow as tf
+from distutils.util import strtobool
+
 from multiprocessing import Pool
 
 from generic.data_provider.iterator import Iterator
@@ -10,6 +11,7 @@ from generic.tf_utils.evaluator import Evaluator
 from generic.tf_utils.optimizer import create_optimizer
 from generic.tf_utils.ckpt_loader import load_checkpoint
 from generic.utils.config import load_config
+from generic.utils.file_handlers import pickle_dump
 from generic.data_provider.image_loader import get_img_loader
 from generic.data_provider.nlp_utils import GloveEmbeddings
 from generic.data_provider.dataset import DatasetMerger
@@ -33,7 +35,7 @@ parser.add_argument("-test_set", type=str, default="test-dev", help="VQA release
 parser.add_argument("-exp_dir", type=str, help="Directory in which experiments are stored")
 parser.add_argument("-config", type=str, help='Config file')
 parser.add_argument("-load_checkpoint", type=str, help="Load model parameters from specified checkpoint")
-parser.add_argument("-continue_exp", type=bool, default=False, help="Continue previously started experiment?")
+parser.add_argument("-continue_exp", type=lambda x:bool(strtobool(x)), default="False", help="Continue previously started experiment?")
 parser.add_argument("-no_thread", type=int, default=1, help="No thread to load batch")
 parser.add_argument("-gpu_ratio", type=float, default=0.75, help="How many GPU ram is required? (ratio)")
 parser.add_argument("-num_gpus", type=int, default=1, help="How many gpus?")
@@ -51,34 +53,32 @@ lrt = config['optimizer']['learning_rate']
 batch_size = config['optimizer']['batch_size']
 clip_val = config['optimizer']['clip_val']
 no_epoch = config["optimizer"]["no_epoch"]
-fined_tuned = config["model"].get('fine_tuned', list())
+finetune = config["model"].get('finetune', list())
 merge_dataset = config.get("merge_dataset", False)
 
 
 # Load images
 logger.info('Loading images..')
-image_loader = get_img_loader(config['model']['image'], args.image_dir)
+image_loader = get_img_loader(config['model']['image'], args.img_dir)
 use_resnet = image_loader.is_raw_image()
-
-
-# Load data
-logger.info('Loading data..')
-trainset = VQADataset(args.data_dir, year=args.year, which_set="train", image_loader=image_loader)
-validset = VQADataset(args.data_dir, year=args.year, which_set="val", image_loader=image_loader)
-testset = VQATestDataset(args.data_dir, year=args.year, which_set=args.test_set, image_loader=image_loader)
-
-if merge_dataset:
-    trainset = DatasetMerger([trainset, validset])
 
 
 # Load dictionary
 logger.info('Loading dictionary..')
 tokenizer = VQATokenizer(os.path.join(args.data_dir, config["dico_name"]))
 
+# Load data
+logger.info('Loading data..')
+trainset = VQADataset(args.data_dir, year=args.year, which_set="train", image_loader=image_loader, preprocess_answers=tokenizer.preprocess_answers)
+validset = VQADataset(args.data_dir, year=args.year, which_set="val", image_loader=image_loader, preprocess_answers=tokenizer.preprocess_answers)
+testset = VQATestDataset(args.data_dir, year=args.year, which_set=args.test_set, image_loader=image_loader)
+
+if merge_dataset:
+    trainset = DatasetMerger([trainset, validset])
+
 # Load glove
 logger.info('Loading glove..')
-glove = GloveEmbeddings(os.path.join(args.data_dir, 'glove_dict.pkl'), glove_dim=config["model"]["glove_dim"])
-
+glove = GloveEmbeddings(os.path.join(args.data_dir, 'glove_dict.pkl'))
 
 # Build Network
 logger.info('Building network..')
@@ -87,11 +87,10 @@ network = VQANetwork(config=config["model"],
                                  no_answers=tokenizer.no_answers,
                                  image_input=image_input)
 
-
 # Build Optimizer
 logger.info('Building optimizer..')
-optimizer, outputs = create_optimizer(network, network.loss, config, fined_tuned=fined_tuned)
-
+optimizer, loss = create_optimizer(network, network.loss, config, finetune=finetune)
+outputs = [loss, network.accuracy]
 
 
 ###############################
@@ -102,6 +101,7 @@ optimizer, outputs = create_optimizer(network, network.loss, config, fined_tuned
 saver = tf.train.Saver()
 resnet_saver = None
 
+# Retrieve only resnet variabes
 if use_resnet:
     start = len(network.scope_name)+1
     resnet_vars = {v.name[start:-2]: v for v in network.get_resnet_parameters()}
@@ -177,7 +177,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
             saver.save(sess, save_path.format('params.ckpt'))
             logger.info("checkpoint saved...")
 
-        pickle.dump({'epoch': t}, open(save_path.format('status.pkl'), 'wb'))
+            pickle_dump({'epoch': t}, save_path.format('status.pkl'))
 
     # Dump test file to upload on VQA website
     logger.info("Compute final {} results...".format(args.test_set))

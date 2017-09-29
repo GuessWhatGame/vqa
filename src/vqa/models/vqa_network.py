@@ -27,8 +27,6 @@ class VQANetwork(ResnetModel):
             self._seq_length = tf.placeholder(tf.int32, [self.batch_size], name='seq_length')
             self._answer_count = tf.placeholder(tf.float32, [self.batch_size, no_answers], name='answer_count')
 
-            self._picture = tf.placeholder(tf.float32, [self.batch_size] + config['model']['image']["dim"], name='picture')
-
             self._is_training = tf.placeholder(tf.bool, name="is_training")
 
             dropout_keep = float(config.get("dropout_keep_prob", 1.0))
@@ -60,12 +58,14 @@ class VQANetwork(ResnetModel):
             #   PICTURES
             #####################
 
+            self._picture = tf.placeholder(tf.float32, [self.batch_size] + config['image']["dim"], name='picture')
+
             if image_input == "fc8" \
                     or image_input == "fc7" \
                     or image_input == "dummy":
 
                 self.picture_out = self._picture
-                if config["normalize"]:
+                if config["image"].get('normalize', True):
                     self.picture_out = tf.nn.l2_normalize(self._picture, dim=1, name="fc_normalization")
 
             elif image_input.startswith("conv") or image_input == "raw":
@@ -75,16 +75,10 @@ class VQANetwork(ResnetModel):
                     if config["cbn"]["use_cbn"]:
                         cbn_factory = CBNfromLSTM(self.question_lstm, config['cbn'])
 
-                        excluded_scopes = []
-                        if 'excluded_scope_names' in config:
-                            excluded_scopes = config.get('excluded_scope_names', [])
-
+                        excluded_scopes = config.get('excluded_scope_names', [])
                         cbn = ConditionalBatchNorm(cbn_factory, excluded_scope_names=excluded_scopes,
                                                                         is_training=self._is_training)
-                    resnet_version = 50
-                    if 'resnet_version' in config:
-                        resnet_version = config['resnet_version']
-
+                    resnet_version =  config['resnet_version']
                     picture_feature_maps = create_resnet(self._picture,
                                                                 is_training=self._is_training,
                                                                 scope=scope_name.name,
@@ -92,7 +86,7 @@ class VQANetwork(ResnetModel):
                                                                 resnet_version=resnet_version)
 
                     self.picture_feature_maps = picture_feature_maps
-                    if config.get('normalize_conv_feat', False):
+                    if config["image"].get('normalize', False):
                         self.picture_feature_maps = tf.nn.l2_normalize(self.picture_feature_maps, dim=[1, 2, 3])
                 else:
                     picture_feature_maps = self._picture
@@ -157,5 +151,9 @@ class VQANetwork(ResnetModel):
             tf.summary.scalar('accuracy', self.accuracy)
 
             print('Model... build!')
+
+    def get_loss(self):
+        return self.loss
+
 
 

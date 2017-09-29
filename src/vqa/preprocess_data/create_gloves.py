@@ -1,49 +1,64 @@
-import os
-import pickle
+import argparse
+from nltk.tokenize import TweetTokenizer
 
-import guesswhat.data_provider as provider
-from guesswhat.data_provider.nlp_preprocessors import VQATokenizer, GloveEmbeddings
+from generic.utils.file_handlers import pickle_dump
 
-data_dir = '/home/sequel/fstrub/vqa_data'
-year = 2014
-
-trainset = provider.VQADataset(data_dir, year=year, which_set="train")
-validset = provider.VQADataset(data_dir, year=year, which_set="val")
-testset = provider.VQATestDataset(data_dir, year=year, which_set="test-dev")
-
-tokenizer = VQATokenizer(os.path.join(data_dir, 'dict_vqa_2014.json'))
+from vqa.data_provider.vqa_dataset import VQADataset, VQATestDataset
 
 
 # wget http://nlp.stanford.edu/data/glove.42B.300d.zip
 
-vectors_file = '/home/sequel/hdevries/glove.42B.300d.txt'
-with open(vectors_file, 'r') as f:
-    vectors = {}
-    for line in f:
-        vals = line.rstrip().split(' ')
-        vectors[vals[0]] = [float(x) for x in vals[1:]]
-
-glove_dict = {}
-not_in_dict = {}
-for set in [trainset, validset, testset]:
-    for g in set.games:
-        words = tokenizer.tokenize_question(g.question)
-        for w in words:
-            w = w.lower()
-            if w in vectors:
-                glove_dict[w] = vectors[w]
-            else:
-                not_in_dict[w] = 1
-
-print(len(glove_dict))
-print(len(not_in_dict))
-
-for k in not_in_dict.keys():
-    print(k)
-
-pickle.dump(glove_dict, open('glove_dict.pkl', 'wb'), protocol=2)
+if __name__ == '__main__':
 
 
+    parser = argparse.ArgumentParser('Creating GLOVE dictionary.. Please first download http://nlp.stanford.edu/data/glove.42B.300d.zip')
+
+    parser.add_argument("-data_dir", type=str, default="." , help="Path to VQA dataset")
+    parser.add_argument("-glove_in", type=str, default="glove.42B.300d.zip", help="Name of the stanford glove file")
+    parser.add_argument("-glove_out", type=str, default="glove_dict.pkl", help="Name of the output glove file")
+    parser.add_argument("-year", type=int, default=2014, help="VQA dataset year (2014/2017)")
+
+    args = parser.parse_args()
+
+    print("Loading dataset...")
+    trainset = VQADataset(args.data_dir, year=args.year, which_set="train")
+    validset = VQADataset(args.data_dir, year=args.year, which_set="val")
+    testdevset = VQATestDataset(args.data_dir, year=args.year, which_set="test-dev")
+    testset = VQATestDataset(args.data_dir, year=args.year, which_set="test")
+
+    tokenizer = TweetTokenizer(preserve_case=False)
+
+    print("Loading glove...")
+    with open(args.glove_in, 'r') as f:
+        vectors = {}
+        for line in f:
+            vals = line.rstrip().split(' ')
+            vectors[vals[0]] = [float(x) for x in vals[1:]]
+
+    print("Mapping glove...")
+    glove_dict = {}
+    not_in_dict = {}
+    for set in [trainset, validset, testdevset, testset]:
+        for g in set.games:
+            words = tokenizer.tokenize(g.question)
+            for w in words:
+                w = w.lower()
+                w = w.replace("'s", "")
+                if w in vectors:
+                    glove_dict[w] = vectors[w]
+                else:
+                    not_in_dict[w] = 1
+
+    print("Number of glove: {}".format(len(glove_dict)))
+    print("Number of words with no glove: {}".format(len(not_in_dict)))
+
+    for k in not_in_dict.keys():
+        print(k)
+
+    print("Dumping file...")
+    pickle_dump(glove_dict, args.glove_out)
+
+    print("Done!")
 
 
 
