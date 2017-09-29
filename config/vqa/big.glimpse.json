@@ -3,13 +3,6 @@
 
     "name" : "LSTM",
 
-    "image_input": "raw",
-    "cbn":
-    {
-      "use_cbn": true,
-      "cbn_embedding_size": 512
-    },
-
     "image":
     {
       "image_input": "raw",
@@ -18,15 +11,21 @@
 
       "attention" : {
         "mode": "glimpse",
-        "no_attention_mlp": 512,
+        "no_attention_mlp": 256,
         "no_glimpses": 2
+      },
+
+      "cbn": {
+        "use_cbn": true,
+        "cbn_embedding_size": 512
       }
+
     },
 
     "glove": true,
 
     "word_embedding_dim": 300,
-    "no_hidden_LSTM": 512,
+    "no_hidden_LSTM": 1024,
     "no_LSTM_cell": 1,
 
     "no_question_mlp": 1024,
@@ -36,17 +35,16 @@
     "dropout_keep_prob": 0.5,
 
 
-
     "resnet_version": 50,
 
     "loss": "soft",
     "activation": "tanh",
-    "excluded_scope_names": ["resnet_v1_50/conv1", "shortcut", "block1"],
+    "excluded_scope_names": ["resnet_v1_50/conv1", "shortcut"],
     "finetune" : []
   },
 
   "optimizer": {
-    "no_epoch": 1,
+    "no_epoch": 15,
     "learning_rate": 3e-4,
     "batch_size": 20,
     "clip_val": 5

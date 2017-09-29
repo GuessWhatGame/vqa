@@ -1,17 +1,15 @@
 import tensorflow as tf
 
-from conditional_batch_norm.cbn_pluggin import CBNfromLSTM
-from conditional_batch_norm.conditional_bn import ConditionalBatchNorm
-from conditional_batch_norm.resnet import create_resnet
-from generic.tf_models import rnn, utils, attention
-from vqa.models.resnet_model import ResnetModel
 
+from generic.tf_models import rnn, utils
+from vqa.models.resnet_model import ResnetModel
+from generic.tf_models.image_feature import get_image_features
 
 class VQANetwork(ResnetModel):
-    def __init__(self, config, no_words, no_answers, image_input, reuse=False, device=''):
+    def __init__(self, config, no_words, no_answers, reuse=False, device=''):
         ResnetModel.__init__(self, "vqa", device=device)
 
-        with tf.variable_scope(self.scope_name, reuse=reuse) as scope_name:
+        with tf.variable_scope(self.scope_name, reuse=reuse) as scope:
 
 
             self.batch_size = None
@@ -56,42 +54,13 @@ class VQANetwork(ResnetModel):
             #####################
 
             self._picture = tf.placeholder(tf.float32, [self.batch_size] + config['image']["dim"], name='picture')
+            self.picture_out = get_image_features(
+                    image=self._picture, question=self.question_lstm,
+                    is_training=self._is_training,
+                    scope_name=scope.name,
+                    config=config['image']
+                )
 
-            if image_input == "fc8" \
-                    or image_input == "fc7" \
-                    or image_input == "dummy":
-
-                self.picture_out = self._picture
-                if config["image"].get('normalize', True):
-                    self.picture_out = tf.nn.l2_normalize(self._picture, dim=1, name="fc_normalization")
-
-            elif image_input.startswith("conv") or image_input == "raw":
-
-                if image_input == "raw":
-                    cbn = None
-                    if config["cbn"]["use_cbn"]:
-                        cbn_factory = CBNfromLSTM(self.question_lstm, config['cbn'])
-
-                        excluded_scopes = config.get('excluded_scope_names', [])
-                        cbn = ConditionalBatchNorm(cbn_factory, excluded_scope_names=excluded_scopes,
-                                                                        is_training=self._is_training)
-                    resnet_version =  config['resnet_version']
-                    picture_feature_maps = create_resnet(self._picture,
-                                                                is_training=self._is_training,
-                                                                scope=scope_name.name,
-                                                                cbn=cbn,
-                                                                resnet_version=resnet_version)
-
-                    self.picture_feature_maps = picture_feature_maps
-                    if config["image"].get('normalize', False):
-                        self.picture_feature_maps = tf.nn.l2_normalize(self.picture_feature_maps, dim=[1, 2, 3])
-                else:
-                    picture_feature_maps = self._picture
-
-                # apply attention
-                self.picture_out = attention.attention_factory(picture_feature_maps, self.question_lstm, config["image"]["attention"])
-            else:
-                assert False, "Wrong input type for image"
 
             #####################
             #   COMBINE
