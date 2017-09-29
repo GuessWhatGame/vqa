@@ -22,9 +22,7 @@ The project is part of the CHISTERA - IGLU Project.
     * [Pretrained models](#pretrained-models)
 * [Reproducing results](#reproducing-results)
     * [Process Data](#data)
-    * [Train Oracle](#oracle)
-    * [Train Guesser](#guesser)
-    * [Train Qgen](#qgen)
+    * [Train Model](#train-model)
 * [FAQ](#faq)
 * [Citation](#citation)
 
