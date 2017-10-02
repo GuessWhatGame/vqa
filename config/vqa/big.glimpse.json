@@ -1,12 +1,12 @@
 {
   "model": {
 
-    "name" : "MRN network (small) with with 2 glimpses",
+    "name" : "LSTM",
 
     "image":
     {
       "image_input": "raw",
-      "dim": [224, 224, 3],
+      "dim": [448, 448, 3],
       "normalize": true,
 
       "resnet_version": 50,
@@ -40,7 +40,6 @@
 
     "loss": "soft",
     "activation": "tanh"
-
   },
 
   "optimizer": {

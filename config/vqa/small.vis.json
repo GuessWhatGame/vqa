@@ -1,7 +1,7 @@
 {
   "model": {
 
-    "name" : "MRN network (small) with with 2 glimpses",
+    "name" : "VQA historical baseline (small)  with classic attention",
 
     "image":
     {
@@ -13,15 +13,14 @@
       "finetune" : [],
 
       "attention" : {
-        "mode": "glimpse",
-        "no_attention_mlp": 256,
-        "no_glimpses": 2
+        "mode": "classic",
+        "no_attention_mlp": 256
       },
 
       "cbn": {
         "use_cbn": true,
         "cbn_embedding_size": 512,
-        "excluded_scope_names": ["resnet_v1_50/conv1", "shortcut"]
+        "excluded_scope_names": ["*"]
       }
 
     },
@@ -40,7 +39,6 @@
 
     "loss": "soft",
     "activation": "tanh"
-
   },
 
   "optimizer": {

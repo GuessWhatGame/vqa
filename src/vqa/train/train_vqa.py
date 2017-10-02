@@ -49,7 +49,7 @@ logger = logging.getLogger()
 # Load config
 resnet_version = config['model'].get('resnet_version', 50)
 use_glove = config["model"]["glove"]
-finetune = config["model"].get('finetune', list())
+finetune = config["model"]["image"].get('finetune', list())
 lrt = config['optimizer']['learning_rate']
 batch_size = config['optimizer']['batch_size']
 clip_val = config['optimizer']['clip_val']
