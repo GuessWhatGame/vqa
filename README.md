@@ -1,7 +1,3 @@
-# vqa
-Still under development...
-
-
 # VQA?! models
 
 This repo aims at reproducing the results of VQA from the following paper:
