@@ -2,7 +2,7 @@ import tensorflow as tf
 
 
 from generic.tf_models import rnn, utils
-from vqa.models.resnet_model import ResnetModel
+from generic.tf_models.abstract_network import ResnetModel
 from generic.tf_models.image_feature import get_image_features
 
 class VQANetwork(ResnetModel):
