@@ -47,13 +47,13 @@ logger = logging.getLogger()
 
 
 # Load config
-image_input = config["model"]["image_input"]
 resnet_version = config['model'].get('resnet_version', 50)
+use_glove = config["model"]["glove"]
+finetune = config["model"].get('finetune', list())
 lrt = config['optimizer']['learning_rate']
 batch_size = config['optimizer']['batch_size']
 clip_val = config['optimizer']['clip_val']
 no_epoch = config["optimizer"]["no_epoch"]
-finetune = config["model"].get('finetune', list())
 merge_dataset = config.get("merge_dataset", False)
 
 
@@ -77,15 +77,16 @@ if merge_dataset:
     trainset = DatasetMerger([trainset, validset])
 
 # Load glove
-logger.info('Loading glove..')
-glove = GloveEmbeddings(os.path.join(args.data_dir, 'glove_dict.pkl'))
+glove = None
+if use_glove:
+    logger.info('Loading glove..')
+    glove = GloveEmbeddings(os.path.join(args.data_dir, config["glove_name"]))
 
 # Build Network
 logger.info('Building network..')
 network = VQANetwork(config=config["model"],
                                  no_words=tokenizer.no_words,
-                                 no_answers=tokenizer.no_answers,
-                                 image_input=image_input)
+                                 no_answers=tokenizer.no_answers)
 
 # Build Optimizer
 logger.info('Building optimizer..')

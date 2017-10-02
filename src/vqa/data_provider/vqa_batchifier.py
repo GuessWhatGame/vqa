@@ -14,8 +14,6 @@ class VQABatchifier(AbstractBatchifier):
         self.sources = sources
         self.glove = glove
 
-        # should be moved somewehere else
-        assert 'glove' not in sources or glove is not None
 
 
     def filter(self, games):

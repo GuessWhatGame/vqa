@@ -34,7 +34,7 @@ class VQANetwork(ResnetModel):
                                            n_dim=int(config["word_embedding_dim"]),
                                            scope="word_embedding")
 
-            if 'glove' in config and config['glove']:
+            if config['glove']:
                 self._glove = tf.placeholder(tf.float32, [None, None, 300], name="glove")
                 word_emb = tf.concat([word_emb, self._glove], axis=2)
 
