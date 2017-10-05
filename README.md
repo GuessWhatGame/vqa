@@ -1,9 +1,9 @@
-# VQA?! models
+# VQA models
 
 This repo aims at reproducing the results of VQA from the following paper:
 -  Modulating early visual processing by language [1] https://arxiv.org/abs/1707.00683
 
-The code was equally developed bu Florian Strub (University of Lille) and Harm de Vries (University of Montreal)
+The code was equally developed by Florian Strub (University of Lille) and Harm de Vries (University of Montreal)
 
 The project is part of the CHISTERA - IGLU Project.
 
@@ -32,7 +32,7 @@ It differs from classic approach that mainly focus on developing new attention m
 
 ### Download
 
-Our code has internal dependences called submodules. To properly clone the repository, please use the following git command:\
+Our code has internal dependencies called submodules. To properly clone the repository, please use the following git command:\
 
 ```
 git clone --recursive git@github.com:vqa/vqa.git
@@ -78,7 +78,7 @@ mkdir out; mkdir out/vqa
 Of course, one is free to change this file architecture!
 
 ### Data
-VQA?! relies on two datasets:
+VQA relies on two dataset:
  - VQAv1
  - VQAv2
 
@@ -97,7 +97,7 @@ TO COME
 
 ## Reproducing results
 
-To launch the experiments in the local directory, you first have to set the pyhton path:
+To launch the experiments in the local directory, you first have to set the python path:
 ```
 export PYTHONPATH=src:${PYTHONPATH}
 ```
@@ -113,7 +113,7 @@ Yet, this code does support any kind of image features as input. If you want to 
 
 #### Create dictionary
 
-To create the VQA dictionary, you need to use the pythn script guesswhat/src/guesswhat/preprocess_data/create_dico.py .
+To create the VQA dictionary, you need to use the python script vqa/src/vqa/preprocess_data/create_dico.py .
 
 ```
 python src/vqa/preprocess_data/create_dictionary.py -data_dir data -year 2014 -dict_file dict.json
