@@ -12,7 +12,7 @@ from generic.tf_utils.optimizer import create_optimizer
 from generic.tf_utils.ckpt_loader import load_checkpoint
 from generic.utils.config import load_config
 from generic.utils.file_handlers import pickle_dump
-from generic.data_provider.image_loader import get_img_loader
+from generic.data_provider.image_loader import get_img_builder
 from generic.data_provider.nlp_utils import GloveEmbeddings
 from generic.data_provider.dataset import DatasetMerger
 
@@ -58,8 +58,8 @@ merge_dataset = config.get("merge_dataset", False)
 
 # Load images
 logger.info('Loading images..')
-image_loader = get_img_loader(config['model']['image'], args.img_dir)
-use_resnet = image_loader.is_raw_image()
+image_builder = get_img_builder(config['model']['image'], args.img_dir)
+use_resnet = image_builder.is_raw_image()
 
 
 # Load dictionary
@@ -68,9 +68,9 @@ tokenizer = VQATokenizer(os.path.join(args.data_dir, config["dico_name"]))
 
 # Load data
 logger.info('Loading data..')
-trainset = VQADataset(args.data_dir, year=args.year, which_set="train", image_loader=image_loader, preprocess_answers=tokenizer.preprocess_answers)
-validset = VQADataset(args.data_dir, year=args.year, which_set="val", image_loader=image_loader, preprocess_answers=tokenizer.preprocess_answers)
-testset = VQATestDataset(args.data_dir, year=args.year, which_set=args.test_set, image_loader=image_loader)
+trainset = VQADataset(args.data_dir, year=args.year, which_set="train", image_builder=image_builder, preprocess_answers=tokenizer.preprocess_answers)
+validset = VQADataset(args.data_dir, year=args.year, which_set="val", image_builder=image_builder, preprocess_answers=tokenizer.preprocess_answers)
+testset = VQATestDataset(args.data_dir, year=args.year, which_set=args.test_set, image_builder=image_builder)
 
 if merge_dataset:
     trainset = DatasetMerger([trainset, validset])

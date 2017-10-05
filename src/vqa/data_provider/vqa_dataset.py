@@ -8,16 +8,16 @@ use_100 = False
 
 
 class Picture:
-    def __init__(self, id, image_loader):
+    def __init__(self, id, image_builder):
         self.id = id
         self.url = "http://mscoco.org/images/{}".format(id)
-        self.filename = str(id).zfill(12)
 
-        if image_loader is not None:
-            self.image_loader = image_loader.preload(id)
+        if image_builder is not None:
+            filename = str(id).zfill(12) + ".jpg"
+            self.image_loader = image_builder.build(id, filename=filename)
 
     def get_image(self):
-        return self.image_loader.get_image(self.filename)
+        return self.image_loader.get_image()
 
 
 class Game(object):
@@ -53,7 +53,7 @@ def process_answers(answer):
 class VQADataset(AbstractDataset):
     """Loads the dataset."""
 
-    def __init__(self, folder, year, which_set, image_loader=None, preprocess_answers=False):
+    def __init__(self, folder, year, which_set, image_builder=None, preprocess_answers=False):
 
         annotations_path_file = '{}/vqa_{}{}_annotations.json'.format(folder, which_set, year)
         questions_path_file = '{}/vqa_{}{}_questions.json'.format(folder, which_set, year)
@@ -102,7 +102,7 @@ class VQADataset(AbstractDataset):
                     self.answer_types[answer_type] += 1
 
                     games.append(Game(id=question_id,
-                                           picture=Picture(picture_id, image_loader),
+                                           picture=Picture(picture_id, image_builder),
                                            question=question,
                                            question_type=question_type,
                                            majority_answer=majority_answer,
@@ -118,7 +118,7 @@ class VQADataset(AbstractDataset):
 class VQATestDataset(AbstractDataset):
     """Loads the dataset."""
 
-    def __init__(self, folder, year, which_set, image_loader=None):
+    def __init__(self, folder, year, which_set, image_builder=None):
 
         questions_path_file = '{}/vqa_{}{}_questions.json'.format(folder, which_set, year)
 
@@ -142,7 +142,7 @@ class VQATestDataset(AbstractDataset):
                 question = question["question"]
 
                 games.append(Game(id=question_id,
-                                       picture=Picture(picture_id, image_loader),
+                                       picture=Picture(picture_id, image_builder),
                                        question=question,
                                        question_type="All",
                                        majority_answer="<unk>",
