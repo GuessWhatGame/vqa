@@ -35,7 +35,7 @@ It differs from classic approach that mainly focus on developing new attention m
 Our code has internal dependencies called submodules. To properly clone the repository, please use the following git command:\
 
 ```
-git clone --recursive git@github.com:vqa/vqa.git
+git clone --recursive https://github.com/GuessWhatGame/vqa.git
 ```
 
 ### Requirements
