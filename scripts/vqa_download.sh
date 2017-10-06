@@ -70,14 +70,3 @@ ln -s v2_OpenEnded_mscoco_test-dev2015_questions.json vqa_test-dev2017_questions
 
 ln -s OpenEnded_abstract_v002_val2015_questions.json vqa_val2015_questions.json
 ln -s OpenEnded_abstract_v002_train2015_questions.json vqa_train2015_questions.json
-
-
-
-
-
-
-
-
-
-
-

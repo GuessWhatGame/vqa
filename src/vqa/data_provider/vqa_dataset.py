@@ -1,6 +1,5 @@
 import collections
 import json
-import os
 
 from generic.data_provider.dataset import AbstractDataset
 from vqa_eval.PythonEvaluationTools.vqaEvaluation.vqaEval import VQAEval

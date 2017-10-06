@@ -1,9 +1,9 @@
 import tensorflow as tf
 
 
-from generic.tf_models import rnn, utils
-from generic.tf_models.abstract_network import ResnetModel
-from generic.tf_models.image_feature import get_image_features
+from neural_toolbox import rnn, utils
+from generic.tf_utils.abstract_network import ResnetModel
+from generic.tf_factory.image_factory import get_image_features
 
 class VQANetwork(ResnetModel):
     def __init__(self, config, no_words, no_answers, reuse=False, device=''):
