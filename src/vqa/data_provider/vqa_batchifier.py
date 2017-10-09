@@ -58,10 +58,10 @@ class VQABatchifier(AbstractBatchifier):
                 batch["answer_count"][i][answer_id] += 1
 
             # retrieve the image source type
-            img = game.picture.get_image()
-            if "picture" not in batch: # initialize an empty array for better memory consumption
-                batch["picture"] = np.zeros((batch_size,) + img.shape)
-            batch["picture"][i] = img
+            img = game.image.get_image()
+            if "image" not in batch: # initialize an empty array for better memory consumption
+                batch["image"] = np.zeros((batch_size,) + img.shape)
+            batch["image"][i] = img
 
         # pad the questions
         batch['question'], batch['seq_length'] = padder(batch['question'],

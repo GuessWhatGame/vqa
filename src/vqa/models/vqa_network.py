@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-
 from neural_toolbox import rnn, utils
 from generic.tf_utils.abstract_network import ResnetModel
 from generic.tf_factory.image_factory import get_image_features
@@ -10,7 +9,6 @@ class VQANetwork(ResnetModel):
         ResnetModel.__init__(self, "vqa", device=device)
 
         with tf.variable_scope(self.scope_name, reuse=reuse) as scope:
-
 
             self.batch_size = None
 
@@ -32,7 +30,8 @@ class VQANetwork(ResnetModel):
             word_emb = utils.get_embedding(self._question,
                                            n_words=no_words,
                                            n_dim=int(config["word_embedding_dim"]),
-                                           scope="word_embedding")
+                                           scope="word_embedding",
+                                           reuse=reuse)
 
             if config['glove']:
                 self._glove = tf.placeholder(tf.float32, [None, None, 300], name="glove")
@@ -50,16 +49,16 @@ class VQANetwork(ResnetModel):
 
 
             #####################
-            #   PICTURES
+            #   IMAGES
             #####################
 
-            self._picture = tf.placeholder(tf.float32, [self.batch_size] + config['image']["dim"], name='picture')
-            self.picture_out = get_image_features(
-                    image=self._picture, question=self.question_lstm,
+            self._image = tf.placeholder(tf.float32, [self.batch_size] + config['image']["dim"], name='image')
+            self.image_out = get_image_features(
+                    image=self._image, question=self.question_lstm,
                     is_training=self._is_training,
                     scope_name=scope.name,
-                    config=config['image']
-                )
+                    config=config['image'],
+                    dropout_keep=dropout_keep)
 
 
             #####################
@@ -69,9 +68,9 @@ class VQANetwork(ResnetModel):
             with tf.variable_scope('final_mlp'):
 
                 self.question_embedding = utils.fully_connected(self.question_lstm, config["no_question_mlp"], activation=activation_name, scope='question_mlp')
-                self.picture_embedding = utils.fully_connected(self.picture_out, config["no_picture_mlp"], activation=activation_name, scope='picture_mlp')
+                self.image_embedding = utils.fully_connected(self.image_out, config["no_image_mlp"], activation=activation_name, scope='image_mlp')
 
-                full_embedding = self.picture_embedding * self.question_embedding
+                full_embedding = self.image_embedding * self.question_embedding
                 full_embedding = tf.nn.dropout(full_embedding, dropout_keep)
 
                 out = utils.fully_connected(full_embedding, config["no_hidden_final_mlp"], scope='layer1', activation=activation_name)
@@ -121,5 +120,7 @@ class VQANetwork(ResnetModel):
     def get_loss(self):
         return self.loss
 
+    def get_accuracy(self):
+        return self.accuracy
 
 

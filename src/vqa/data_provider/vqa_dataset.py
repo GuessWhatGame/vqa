@@ -6,7 +6,7 @@ from vqa_eval.PythonEvaluationTools.vqaEvaluation.vqaEval import VQAEval
 use_100 = False
 
 
-class Picture:
+class Image:
     def __init__(self, id, image_builder):
         self.id = id
         self.url = "http://mscoco.org/images/{}".format(id)
@@ -20,9 +20,9 @@ class Picture:
 
 
 class Game(object):
-    def __init__(self, id, picture, question, majority_answer, answers, question_type, answer_type):
+    def __init__(self, id, image, question, majority_answer, answers, question_type, answer_type):
         self.id = id
-        self.picture = picture
+        self.image = image
         self.question = question
         self.majority_answer = majority_answer
         self.answers = answers
@@ -30,7 +30,7 @@ class Game(object):
         self.answer_type = answer_type
 
     def __str__(self):
-        return "[#q:{}, #p:{}] {} - {} ({})".format(self.id, self.picture.id, self.question, self.majority_answer, self.answer_type)
+        return "[#q:{}, #p:{}] {} - {} ({})".format(self.id, self.image.id, self.question, self.majority_answer, self.answer_type)
 
 
 # VQA have some specific answer preprocessing that we apply here
@@ -82,7 +82,7 @@ class VQADataset(AbstractDataset):
                     assert annotation["question_id"] == question["question_id"]
 
                     question_id = int(question["question_id"])
-                    picture_id = question["image_id"]
+                    image_id = question["image_id"]
 
                     question = question["question"]
                     question_type = annotation["question_type"]
@@ -101,12 +101,12 @@ class VQADataset(AbstractDataset):
                     self.answer_types[answer_type] += 1
 
                     games.append(Game(id=question_id,
-                                           picture=Picture(picture_id, image_builder),
-                                           question=question,
-                                           question_type=question_type,
-                                           majority_answer=majority_answer,
-                                           answers=answers,
-                                           answer_type=answer_type))
+                                      image=Image(image_id, image_builder),
+                                      question=question,
+                                      question_type=question_type,
+                                      majority_answer=majority_answer,
+                                      answers=answers,
+                                      answer_type=answer_type))
 
                     if use_100 and len(games) > 100: break
 
@@ -137,16 +137,16 @@ class VQATestDataset(AbstractDataset):
             for question in full_questions["questions"]:
 
                 question_id = int(question["question_id"])
-                picture_id = question["image_id"]
+                image_id = question["image_id"]
                 question = question["question"]
 
                 games.append(Game(id=question_id,
-                                       picture=Picture(picture_id, image_builder),
-                                       question=question,
-                                       question_type="All",
-                                       majority_answer="<unk>",
-                                       answers=["<unk>"],
-                                       answer_type="All"))
+                                  image=Image(image_id, image_builder),
+                                  question=question,
+                                  question_type="All",
+                                  majority_answer="<unk>",
+                                  answers=["<unk>"],
+                                  answer_type="All"))
 
                 if use_100 and len(games) > 100: break
 

@@ -108,8 +108,31 @@ Note that you can also directly execute the experiments in the source folder.
 Before starting the training, one needs to create a dictionary
 
 #### Extract image features
+
 You do not need to extract image feature for VQA + CBN.
-Yet, this code does support any kind of image features as input. If you want to do so, please follow the instruction in the GuessWhat submodule.
+Yet, this code does support any kind of image features as input.
+
+Following the original papers, we are going to extract fc8 features from the coco images by using a VGG-16 network.
+
+First, you need to download the ResNet-152 pretrained network provided by [slim-tensorflow](https://github.com/tensorflow/models/tree/master/research/slim):
+
+```
+wget http://download.tensorflow.org/models/resnet_v1_152_2016_08_28.tar.gz -P data/
+tar zxvf data/resnet_v1_152_2016_08_28.tar.gz -C data/
+```
+
+Them, use the following scripts src/vqa/preprocess_data/extract_img_features.py .
+```
+for mode in "${array[@]}"; do
+   python src/vqa/preprocess_data/extract_img_features.py \
+     -img_dir data/img/raw \
+     -data_dir data \
+     -data_out data \
+     -img_size 224
+     -ckpt data/resnet_v1_152.ckpt \
+     -feature_name block4
+```
+
 
 #### Create dictionary
 

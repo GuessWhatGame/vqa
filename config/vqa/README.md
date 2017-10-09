@@ -45,7 +45,7 @@ The keyword "model" refers to the VQA network:
     "no_LSTM_cell": int,           # Number of stacked LSTM
 
     "no_question_mlp": int,        # Dimension of the LSTM projection
-    "no_picture_mlp": int,         # Dimension of the Image projection (Note they must be both equals)
+    "no_image_mlp": int,           # Dimension of the Image projection (Note they must be both equals)
 
     "no_hidden_final_mlp": int,    # No of units before the final softmax
     "dropout_keep_prob": float,    # Dropout ratio (1 = no dropout)
