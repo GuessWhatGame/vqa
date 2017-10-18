@@ -7,21 +7,23 @@ use_100 = False
 
 
 class Image:
-    def __init__(self, id, image_builder):
-        self.id = id
-        self.url = "http://mscoco.org/images/{}".format(id)
+    def __init__(self, img_id, image_builder, year, which_set):
+        self.id = img_id
+        self.url = "http://mscoco.org/images/{}".format(img_id)
 
         if image_builder is not None:
-            filename = str(id).zfill(12) + ".jpg"
-            self.image_loader = image_builder.build(id, filename=filename)
+            filename = "{set}{year}/COCO_{set}{year}_{id}.jpg".format(
+                set=which_set, year=year, id=str(img_id).zfill(12)
+            )
+            self.image_loader = image_builder.build(img_id, filename=filename)
 
     def get_image(self):
         return self.image_loader.get_image()
 
 
 class Game(object):
-    def __init__(self, id, image, question, majority_answer, answers, question_type, answer_type):
-        self.id = id
+    def __init__(self, game_id, image, question, majority_answer, answers, question_type, answer_type):
+        self.id = game_id
         self.image = image
         self.question = question
         self.majority_answer = majority_answer
@@ -63,95 +65,76 @@ class VQADataset(AbstractDataset):
         self.answer_counter = collections.Counter()
         self.answer_types = collections.Counter()
 
-        with open(annotations_path_file) as annotations_file:
-            with open(questions_path_file) as questions_file:
-                print("Loading annotations...")
+        # Load questions
+        print("Loading questions...")
+        with open(questions_path_file) as questions_file:
+            full_questions = json.load(questions_file)
+
+        # Load annotations - train/val only
+        try:
+            print("Loading annotations...")
+            with open(annotations_path_file) as annotations_file:
                 full_annotations = json.load(annotations_file)
 
-                print("Loading questions...")
-                full_questions = json.load(questions_file)
+            assert full_annotations["info"]["version"] == full_questions["info"]["version"]
+            assert full_annotations["data_subtype"] == full_questions["data_subtype"]
+            assert full_annotations["data_subtype"].startswith(which_set)
+            assert full_annotations["data_subtype"].endswith(str(year))
 
-                assert full_annotations["info"]["version"] == full_questions["info"]["version"]
-                assert full_annotations["data_subtype"] == full_questions["data_subtype"]
-                assert full_annotations["data_subtype"].startswith(which_set)
-                assert full_annotations["data_subtype"].endswith(str(year))
+        except FileNotFoundError:
+            print("No annotations file... (Test dataset)")
+            assert "test" in which_set
 
-                print("Successfully Loaded VQA v{} ({})".format(full_annotations["info"]["version"], which_set))
+            # Create a dummy annotation file for test dataset
+            full_annotations = []
+            for q in full_questions["questions"]:
+                full_annotations.append({
+                    "question_id" : q["question_id"],
+                    "question_type": "unk",
+                    "multiple_choice_answer" : "unk",
+                    "answers" : [{"answer" : "unk"}],
+                    "answer_type" : "unk"
+                })
+            full_annotations = {"annotations" : full_annotations}
 
-                for annotation, question in zip(full_annotations["annotations"], full_questions["questions"]):
-                    assert annotation["question_id"] == question["question_id"]
+        print("Starting generating VQA v{} dataset ({})".format(full_questions["info"]["version"], which_set))
 
-                    question_id = int(question["question_id"])
-                    image_id = question["image_id"]
+        # Start creating the dataser
+        for annotation, question in zip(full_annotations["annotations"], full_questions["questions"]):
+            assert annotation["question_id"] == question["question_id"]
 
-                    question = question["question"]
-                    question_type = annotation["question_type"]
-                    self.question_types[question_type] += 1
+            question_id = int(question["question_id"])
+            image_id = question["image_id"]
 
-                    majority_answer = annotation["multiple_choice_answer"]
-                    answers = [ a["answer"] for a in annotation["answers"]]
-                    answer_type = annotation["answer_type"]
+            question = question["question"]
+            question_type = annotation["question_type"]
+            self.question_types[question_type] += 1
 
-                    if preprocess_answers:
-                        majority_answer = process_answers(majority_answer)
-                        answers = [process_answers(a) for a in answers]
+            majority_answer = annotation["multiple_choice_answer"]
+            answers = [ a["answer"] for a in annotation["answers"]]
+            answer_type = annotation["answer_type"]
 
-                    for a in answers:
-                        self.answer_counter[a] += 1
-                    self.answer_types[answer_type] += 1
+            if preprocess_answers:
+                majority_answer = process_answers(majority_answer)
+                answers = [process_answers(a) for a in answers]
 
-                    games.append(Game(id=question_id,
-                                      image=Image(image_id, image_builder),
-                                      question=question,
-                                      question_type=question_type,
-                                      majority_answer=majority_answer,
-                                      answers=answers,
-                                      answer_type=answer_type))
+            for a in answers:
+                self.answer_counter[a] += 1
+            self.answer_types[answer_type] += 1
 
-                    if use_100 and len(games) > 100: break
+            games.append(Game(game_id=question_id,
+                              image=Image(image_id, image_builder, year, which_set),
+                              question=question,
+                              question_type=question_type,
+                              majority_answer=majority_answer,
+                              answers=answers,
+                              answer_type=answer_type))
+
+            if use_100 and len(games) > 100: break
 
         print('{} games loaded...'.format(len(games)))
         super(VQADataset, self).__init__(games)
 
-#TODO split annotation loading to question loading (code duplication)
-class VQATestDataset(AbstractDataset):
-    """Loads the dataset."""
-
-    def __init__(self, folder, year, which_set, image_builder=None):
-
-        questions_path_file = '{}/vqa_{}{}_questions.json'.format(folder, which_set, year)
-
-        games = []
-        self.question_types = collections.Counter()
-
-        with open(questions_path_file) as questions_file:
-
-            print("Loading questions...")
-            full_questions = json.load(questions_file)
-
-            assert full_questions["data_subtype"] == full_questions["data_subtype"]
-            assert full_questions["data_subtype"].startswith(which_set)
-
-            print("Successfully Loaded VQA v{} ({})".format(full_questions["info"]["version"], which_set))
-
-            for question in full_questions["questions"]:
-
-                question_id = int(question["question_id"])
-                image_id = question["image_id"]
-                question = question["question"]
-
-                games.append(Game(id=question_id,
-                                  image=Image(image_id, image_builder),
-                                  question=question,
-                                  question_type="All",
-                                  majority_answer="<unk>",
-                                  answers=["<unk>"],
-                                  answer_type="All"))
-
-                if use_100 and len(games) > 100: break
-
-        print('{} games loaded...'.format(len(games)))
-        super(VQATestDataset, self).__init__(games)
 
 
 # class VQATestWriter(object):

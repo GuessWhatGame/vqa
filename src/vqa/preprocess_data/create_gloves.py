@@ -38,8 +38,8 @@ if __name__ == '__main__':
     print("Mapping glove...")
     glove_dict = {}
     not_in_dict = {}
-    for set in [trainset, validset, testdevset, testset]:
-        for g in set.games:
+    for _set in [trainset, validset, testdevset, testset]:
+        for g in _set.games:
             words = tokenizer.tokenize(g.question)
             for w in words:
                 w = w.lower()

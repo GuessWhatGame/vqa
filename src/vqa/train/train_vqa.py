@@ -8,7 +8,7 @@ from multiprocessing import Pool
 
 from generic.data_provider.iterator import Iterator
 from generic.tf_utils.evaluator import Evaluator, MultiGPUEvaluator
-from generic.tf_utils.optimizer import create_optimizer, create_multi_gpu_optimizer
+from generic.tf_utils.optimizer import create_multi_gpu_optimizer
 from generic.tf_utils.ckpt_loader import load_checkpoint, create_resnet_saver
 from generic.utils.config import load_config
 from generic.utils.file_handlers import pickle_dump
@@ -17,7 +17,7 @@ from generic.data_provider.nlp_utils import GloveEmbeddings
 from generic.data_provider.dataset import DatasetMerger
 
 from vqa.data_provider.vqa_tokenizer import VQATokenizer
-from vqa.data_provider.vqa_dataset import VQADataset,VQATestDataset
+from vqa.data_provider.vqa_dataset import VQADataset
 from vqa.data_provider.vqa_batchifier import VQABatchifier
 from vqa.models.vqa_network import VQANetwork
 from vqa.train.evaluator_listener import VQADumperListener, VQAEvaluator
@@ -49,12 +49,10 @@ logger = logging.getLogger()
 
 
 # Load config
-resnet_version = config['model'].get('resnet_version', 50)
-use_glove = config["model"]["glove"]
+resnet_version = config['model']["image"].get('resnet_version', 50)
 finetune = config["model"]["image"].get('finetune', list())
-lrt = config['optimizer']['learning_rate']
+use_glove = config["model"]["glove"]
 batch_size = config['optimizer']['batch_size']
-clip_val = config['optimizer']['clip_val']
 no_epoch = config["optimizer"]["no_epoch"]
 merge_dataset = config.get("merge_dataset", False)
 
@@ -74,7 +72,7 @@ tokenizer = VQATokenizer(os.path.join(args.data_dir, config["dico_name"]))
 logger.info('Loading data..')
 trainset = VQADataset(args.data_dir, year=args.year, which_set="train", image_builder=image_builder, preprocess_answers=tokenizer.preprocess_answers)
 validset = VQADataset(args.data_dir, year=args.year, which_set="val", image_builder=image_builder, preprocess_answers=tokenizer.preprocess_answers)
-testset = VQATestDataset(args.data_dir, year=args.year, which_set=args.test_set, image_builder=image_builder)
+testset = VQADataset(args.data_dir, year=args.year, which_set=args.test_set, image_builder=image_builder)
 
 if merge_dataset:
     trainset = DatasetMerger([trainset, validset])
