@@ -5,7 +5,6 @@ from generic.data_provider.dataset import AbstractDataset
 from vqa_eval.PythonEvaluationTools.vqaEvaluation.vqaEval import VQAEval
 use_100 = False
 
-
 class Image:
     def __init__(self, img_id, image_builder, year, which_set):
         self.id = img_id
@@ -13,9 +12,11 @@ class Image:
 
         if image_builder is not None:
             filename = "{set}{year}/COCO_{set}{year}_{id}.jpg".format(
-                set=which_set, year=year, id=str(img_id).zfill(12)
-            )
-            self.image_loader = image_builder.build(img_id, filename=filename)
+                set=which_set, year=year, id=str(img_id).zfill(12))
+            self.image_loader = image_builder.build(img_id,
+                                                    filename=filename,
+                                                    which_set=which_set,
+                                                    optional=False)
 
     def get_image(self):
         return self.image_loader.get_image()
@@ -84,6 +85,9 @@ class VQADataset(AbstractDataset):
         except FileNotFoundError:
             print("No annotations file... (Test dataset)")
             assert "test" in which_set
+
+            # as test-year is always 2015, it is easier to hard-code it
+            year = 2015
 
             # Create a dummy annotation file for test dataset
             full_annotations = []
