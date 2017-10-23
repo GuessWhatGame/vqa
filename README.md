@@ -123,8 +123,7 @@ tar zxvf data/resnet_v1_152_2016_08_28.tar.gz -C data/
 
 Them, use the following scripts src/vqa/preprocess_data/extract_img_features.py .
 ```
-for mode in "${array[@]}"; do
-   python src/vqa/preprocess_data/extract_img_features.py \
+python src/vqa/preprocess_data/extract_img_features.py \
      -img_dir data/img/raw \
      -data_dir data \
      -data_out data \
@@ -150,7 +149,8 @@ To create the GLOVE dictionary, you first need to download the original glove fi
 
 ```
 wget http://nlp.stanford.edu/data/glove.42B.300d.zip -P data/
-python src/vqa/preprocess_data/create_gloves.py -data_dir data -glove_in data/glove.42B.300d.zip -glove_out data/glove_dict.pkl -year 2014
+unzip data/glove.42B.300d.zip -d data/
+python src/vqa/preprocess_data/create_gloves.py -data_dir data -glove_in data/glove.42B.300d.txt -glove_out data/glove_dict.pkl -year 2014
 ```
 
 ### Train Model
