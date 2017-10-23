@@ -5,6 +5,7 @@ import tensorflow as tf
 from distutils.util import strtobool
 
 from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 
 from generic.data_provider.iterator import Iterator
 from generic.tf_utils.evaluator import Evaluator, MultiGPUEvaluator
@@ -61,6 +62,7 @@ merge_dataset = config.get("merge_dataset", False)
 logger.info('Loading images..')
 image_builder = get_img_builder(config['model']['image'], args.img_dir)
 use_resnet = image_builder.is_raw_image()
+require_multiprocess = image_builder.require_multiprocess()
 
 
 # Load dictionary
@@ -167,6 +169,15 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
     # start actual training
     best_val_acc, best_train_acc = 0, 0
     for t in range(start_epoch, no_epoch):
+
+        # CPU/GPU option
+        # h5 requires a Tread pool while raw images are more efficient with processes
+        if require_multiprocess:
+            cpu_pool = Pool(args.no_thread, maxtasksperchild=1000)
+        else:
+            cpu_pool = ThreadPool(args.no_thread)
+            cpu_pool._maxtasksperchild = 1000
+
 
         logger.info('Epoch {}/{}..'.format(t + 1,no_epoch))
 

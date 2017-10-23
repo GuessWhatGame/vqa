@@ -1,9 +1,9 @@
 import argparse
 from nltk.tokenize import TweetTokenizer
-
+import io
 from generic.utils.file_handlers import pickle_dump
 
-from vqa.data_provider.vqa_dataset import VQADataset, VQATestDataset
+from vqa.data_provider.vqa_dataset import VQADataset
 
 
 # wget http://nlp.stanford.edu/data/glove.42B.300d.zip
@@ -23,13 +23,13 @@ if __name__ == '__main__':
     print("Loading dataset...")
     trainset = VQADataset(args.data_dir, year=args.year, which_set="train")
     validset = VQADataset(args.data_dir, year=args.year, which_set="val")
-    testdevset = VQATestDataset(args.data_dir, year=args.year, which_set="test-dev")
-    testset = VQATestDataset(args.data_dir, year=args.year, which_set="test")
+    testdevset = VQADataset(args.data_dir, year=args.year, which_set="test-dev")
+    testset = VQADataset(args.data_dir, year=args.year, which_set="test")
 
     tokenizer = TweetTokenizer(preserve_case=False)
 
     print("Loading glove...")
-    with open(args.glove_in, 'r') as f:
+    with io.open(args.glove_in, 'r', encoding="utf-8") as f:
         vectors = {}
         for line in f:
             vals = line.rstrip().split(' ')

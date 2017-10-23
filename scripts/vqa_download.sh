@@ -49,6 +49,10 @@ mv *.zip zip
 
 rm MultipleChoice*
 
+
+
+
+
 ln -s mscoco_train2014_annotations.json vqa_train2014_annotations.json
 ln -s mscoco_val2014_annotations.json vqa_val2014_annotations.json
 
@@ -70,3 +74,21 @@ ln -s v2_OpenEnded_mscoco_test-dev2015_questions.json vqa_test-dev2017_questions
 
 ln -s OpenEnded_abstract_v002_val2015_questions.json vqa_val2015_questions.json
 ln -s OpenEnded_abstract_v002_train2015_questions.json vqa_train2015_questions.json
+
+
+mkdir images
+wget http://msvocds.blob.core.windows.net/coco2014/train2014.zip
+wget http://msvocds.blob.core.windows.net/coco2014/val2014.zip
+wget http://msvocds.blob.core.windows.net/coco2015/test2015.zip
+
+unzip train2014.zip -d images
+unzip val2014.zip -d images
+unzip test2015.zip -d images
+
+ln -s images/test2015 images/test2014
+ln -s images/test2015 images/test-dev2014
+ln -s images/test2015 images/test2017
+ln -s images/test2015 images/test-dev2017
+
+ln -s images/train2014 images/train2017
+ln -s images/val2014 images/val2017
