@@ -149,7 +149,8 @@ To create the GLOVE dictionary, you first need to download the original glove fi
 
 ```
 wget http://nlp.stanford.edu/data/glove.42B.300d.zip -P data/
-python src/vqa/preprocess_data/create_gloves.py -data_dir data -glove_in data/glove.42B.300d.zip -glove_out data/glove_dict.pkl -year 2014
+unzip data/glove.42B.300d.zip -d data/
+python src/vqa/preprocess_data/create_gloves.py -data_dir data -glove_in data/glove.42B.300d.txt -glove_out data/glove_dict.pkl -year 2014
 ```
 
 ### Train Model
