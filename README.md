@@ -123,8 +123,7 @@ tar zxvf data/resnet_v1_152_2016_08_28.tar.gz -C data/
 
 Them, use the following scripts src/vqa/preprocess_data/extract_img_features.py .
 ```
-for mode in "${array[@]}"; do
-   python src/vqa/preprocess_data/extract_img_features.py \
+python src/vqa/preprocess_data/extract_img_features.py \
      -img_dir data/img/raw \
      -data_dir data \
      -data_out data \
