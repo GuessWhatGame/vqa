@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 from distutils.util import strtobool
 import numpy as np
 import argparse
@@ -17,12 +16,12 @@ parser = argparse.ArgumentParser('Feature extractor! ')
 parser.add_argument("-img_dir", type=str, required=True, help="Input Image folder")
 parser.add_argument("-data_dir", type=str, required=True,help="Dataset folder")
 parser.add_argument("-out_dir", type=str, required=True, help="Output directory for h5 files")
-parser.add_argument("-set_type", type=list, default=["val", "train", "test"], help='Select the dataset to dump')
+parser.add_argument("-set_type", type=list, default=["test", "train", "val"], help='Select the dataset to dump')
 
 parser.add_argument("-year", type=int, default=2014, help="VQA dataset year (2014/2017)")
 
 parser.add_argument("-subtract_mean", type=lambda x:bool(strtobool(x)), default="True", help="Preprocess the image by substracting the mean")
-parser.add_argument("-img_size", type=int, default=224, help="image size (pixels)")
+parser.add_argument("-img_size", type=int, required=True, help="image size (pixels)")
 
 parser.add_argument("-no_thread", type=int, default=2, help="No thread to load batch")
 

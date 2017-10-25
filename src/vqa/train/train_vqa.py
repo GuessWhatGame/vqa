@@ -160,8 +160,8 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
 
     # Create listener to use VQA evaluation code
     dump_file = save_path.format('tmp.json')
-    ques_file = os.path.join(args.data_dir, 'OpenEnded_mscoco_val2014_questions.json')
-    ann_file = os.path.join(args.data_dir, 'mscoco_val2014_annotations.json')
+    ques_file = os.path.join(args.data_dir, 'OpenEnded_mscoco_val{}_questions.json'.format(args.year))
+    ann_file = os.path.join(args.data_dir, 'mscoco_val{}_annotations.json'.format(args.year))
 
     vqa_eval_listener = VQAEvaluator(tokenizer, dump_file, ann_file, ques_file, require=networks[0].prediction)
 
