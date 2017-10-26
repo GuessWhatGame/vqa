@@ -183,7 +183,7 @@ TBD
 
 
 ```
-@inproceedings{guesswhat_game,
+@inproceedings{de2017modulating,
 author = {Harm de Vries and Florian Strub and J\'er\'emie Mary and Hugo Larochelle and Olivier Pietquin and Aaron C. Courville},
 title = {Modulating early visual processing by language},
 booktitle = {Advances in Neural Information Processing Systems 30},
