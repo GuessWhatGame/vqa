@@ -1,8 +1,10 @@
 import tensorflow as tf
+import tensorflow.contrib.layers as tfc_layers
 
 from neural_toolbox import rnn, utils
 from generic.tf_utils.abstract_network import ResnetModel
 from generic.tf_factory.image_factory import get_image_features
+
 
 class VQANetwork(ResnetModel):
     def __init__(self, config, no_words, no_answers, reuse=False, device=''):
@@ -27,16 +29,16 @@ class VQANetwork(ResnetModel):
                                    lambda: tf.constant(dropout_keep),
                                    lambda: tf.constant(1.0))
 
-            word_emb = utils.get_embedding(self._question,
-                                           n_words=no_words,
-                                           n_dim=int(config["word_embedding_dim"]),
-                                           scope="word_embedding",
-                                           reuse=reuse)
+            word_emb = tfc_layers.embed_sequence(
+                ids=self._question,
+                vocab_size=no_words,
+                embed_dim=config["word_embedding_dim"],
+                scope="word_embedding",
+                reuse=reuse)
 
             if config['glove']:
                 self._glove = tf.placeholder(tf.float32, [None, None, 300], name="glove")
                 word_emb = tf.concat([word_emb, self._glove], axis=2)
-
 
             self.question_lstm, self.all_lstm_states = rnn.variable_length_LSTM(
                 word_emb,

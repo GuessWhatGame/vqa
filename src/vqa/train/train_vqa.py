@@ -4,15 +4,13 @@ import os
 import tensorflow as tf
 from distutils.util import strtobool
 
-from multiprocessing import Pool
-from multiprocessing.pool import ThreadPool
-
 from generic.data_provider.iterator import Iterator
 from generic.tf_utils.evaluator import Evaluator, MultiGPUEvaluator
-from generic.tf_utils.optimizer import create_multi_gpu_optimizer
+from generic.tf_utils.optimizer import create_optimizer, create_multi_gpu_optimizer
 from generic.tf_utils.ckpt_loader import load_checkpoint, create_resnet_saver
 from generic.utils.config import load_config
 from generic.utils.file_handlers import pickle_dump
+from generic.utils.thread_pool import create_cpu_pool
 from generic.data_provider.image_loader import get_img_builder
 from generic.data_provider.nlp_utils import GloveEmbeddings
 from generic.data_provider.dataset import DatasetMerger
@@ -20,7 +18,7 @@ from generic.data_provider.dataset import DatasetMerger
 from vqa.data_provider.vqa_tokenizer import VQATokenizer
 from vqa.data_provider.vqa_dataset import VQADataset
 from vqa.data_provider.vqa_batchifier import VQABatchifier
-from vqa.models.vqa_network import VQANetwork
+from vqa.models.vqa_network_film import VQANetwork_FiLM
 from vqa.train.evaluator_listener import VQADumperListener, VQAEvaluator
 
 
@@ -62,7 +60,7 @@ merge_dataset = config.get("merge_dataset", False)
 logger.info('Loading images..')
 image_builder = get_img_builder(config['model']['image'], args.img_dir)
 use_resnet = image_builder.is_raw_image()
-require_multiprocess = image_builder.require_multiprocess()
+use_process = image_builder.require_multiprocess()
 
 
 # Load dictionary
@@ -96,12 +94,12 @@ for i in range(args.no_gpu):
     with tf.device('gpu:{}'.format(i)):
         with tf.name_scope('tower_{}'.format(i)) as tower_scope:
 
-            network = VQANetwork(
+            network = VQANetwork_FiLM(
                 config=config["model"],
                 no_words=tokenizer.no_words,
                 no_answers=tokenizer.no_answers,
                 reuse=(i > 0), device=i)
-
+    
             networks.append(network)
 
 assert len(networks) > 0, "you need to set no_gpu > 0 even if you are using CPU"
@@ -109,8 +107,8 @@ assert len(networks) > 0, "you need to set no_gpu > 0 even if you are using CPU"
 
 # Build Optimizer
 logger.info('Building optimizer..')
-optimizer, outputs = create_multi_gpu_optimizer(networks, config, finetune=finetune)
-#optimizer, outputs = create_optimizer(networks[0], config, finetune=finetune)
+#optimizer, outputs = create_multi_gpu_optimizer(networks, config, finetune=finetune)
+optimizer, outputs = create_optimizer(networks[0], config, finetune=finetune)
 
 
 ###############################
@@ -127,9 +125,8 @@ if use_resnet:
 
 
 # CPU/GPU option
-cpu_pool = Pool(args.no_thread, maxtasksperchild=1000)
-gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=args.gpu_ratio)
 
+gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=args.gpu_ratio)
 
 with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True)) as sess:
 
@@ -138,12 +135,10 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
     scope_names = ['tower_{}/{}'.format(i, network.scope_name) for i, network in enumerate(networks)]
     logger.info("Sources: " + ', '.join(sources))
 
-
     # Create evaluation tools
-    train_evaluator = MultiGPUEvaluator(sources, scope_names, networks=networks, tokenizer=tokenizer)
-    #train_evaluator = Evaluator(sources, scope_names[0], network=networks[0], tokenizer=tokenizer)
+    # train_evaluator = MultiGPUEvaluator(sources, scope_names, networks=networks, tokenizer=tokenizer)
+    train_evaluator = Evaluator(sources, scope_names[0], network=networks[0], tokenizer=tokenizer)
     eval_evaluator = Evaluator(sources, scope_names[0], network=networks[0], tokenizer=tokenizer)
-
 
     # Load checkpoints or pre-trained networks
     sess.run(tf.global_variables_initializer())
@@ -151,12 +146,8 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
     if use_resnet:
         resnet_saver.restore(sess, os.path.join(args.data_dir,'resnet_v1_{}.ckpt'.format(resnet_version)))
 
-
-
-
     train_batchifier = VQABatchifier(tokenizer, sources, glove, remove_unknown=True)
     eval_batchifier = VQABatchifier(tokenizer, sources, glove, remove_unknown=False)
-
 
     # Create listener to use VQA evaluation code
     dump_file = save_path.format('tmp.json')
@@ -165,21 +156,14 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
 
     vqa_eval_listener = VQAEvaluator(tokenizer, dump_file, ann_file, ques_file, require=networks[0].prediction)
 
-
     # start actual training
     best_val_acc, best_train_acc = 0, 0
     for t in range(start_epoch, no_epoch):
 
         # CPU/GPU option
-        # h5 requires a Tread pool while raw images are more efficient with processes
-        if require_multiprocess:
-            cpu_pool = Pool(args.no_thread, maxtasksperchild=1000)
-        else:
-            cpu_pool = ThreadPool(args.no_thread)
-            cpu_pool._maxtasksperchild = 1000
+        cpu_pool = create_cpu_pool(args.no_thread, use_process=use_process)
 
-
-        logger.info('Epoch {}/{}..'.format(t + 1,no_epoch))
+        logger.info('Epoch {}/{}..'.format(t + 1, no_epoch))
 
         train_iterator = Iterator(trainset,
                                   batch_size=batch_size,
@@ -188,8 +172,7 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
                                   pool=cpu_pool)
         [train_loss, train_accuracy] = train_evaluator.process(sess, train_iterator, outputs=outputs + [optimizer])
 
-
-        valid_loss, valid_accuracy = 0,0
+        valid_loss, valid_accuracy = 0, 0
         if not merge_dataset:
             valid_iterator = Iterator(validset,
                                       batch_size=batch_size*2,
@@ -208,6 +191,8 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
         logger.info("Validation accuracy: {}".format(valid_accuracy))
         logger.info(vqa_eval_listener.get_accuracy())
 
+
+        #TODO create a better ckpt manager
         if valid_accuracy >= best_val_acc:
             best_train_acc = train_accuracy
             best_val_acc = valid_accuracy
@@ -219,11 +204,13 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
     # Dump test file to upload on VQA website
     logger.info("Compute final {} results...".format(args.test_set))
 
-    vqa_file_name = "vqa_OpenEnded_mscoco_{}{}_cbn_results.json".format(args.test_set, args.year, config["model"]["name"])
+    vqa_file_name = "vqa_OpenEnded_mscoco_{}{}_film_results.json".format(args.test_set, args.year, config["model"]["name"])
     dumper_eval_listener = VQADumperListener(tokenizer, os.path.join(args.exp_dir, save_path.format(vqa_file_name)),
                                                   require=networks[0].prediction)
 
     saver.restore(sess, save_path.format('params.ckpt'))
+
+    cpu_pool = create_cpu_pool(args.no_thread, use_process=use_process)
     test_iterator = Iterator(testset,
                              batch_size=batch_size*2,
                              batchifier=eval_batchifier,

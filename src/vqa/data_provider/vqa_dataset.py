@@ -80,24 +80,27 @@ class VQADataset(AbstractDataset):
             assert full_annotations["info"]["version"] == full_questions["info"]["version"]
             assert full_annotations["data_subtype"] == full_questions["data_subtype"]
             assert full_annotations["data_subtype"].startswith(which_set)
-            assert full_annotations["data_subtype"].endswith(str(year))
+
+            if full_annotations["info"]["version"] == "2.0":
+                assert full_annotations["info"]["year"] == year
 
         except FileNotFoundError:
             print("No annotations file... (Test dataset)")
             assert "test" in which_set
 
-            # as test-year is always 2015, it is easier to hard-code it
-            year = 2015
+            # test-year is 2015 for vqa1 test set
+            if year == 2014:
+                year = 2015
 
             # Create a dummy annotation file for test dataset
             full_annotations = []
             for q in full_questions["questions"]:
                 full_annotations.append({
-                    "question_id" : q["question_id"],
+                    "question_id": q["question_id"],
                     "question_type": "unk",
-                    "multiple_choice_answer" : "unk",
-                    "answers" : [{"answer" : "unk"}],
-                    "answer_type" : "unk"
+                    "multiple_choice_answer": "unk",
+                    "answers": [{"answer": "unk"}],
+                    "answer_type": "unk"
                 })
             full_annotations = {"annotations" : full_annotations}
 
@@ -115,7 +118,7 @@ class VQADataset(AbstractDataset):
             self.question_types[question_type] += 1
 
             majority_answer = annotation["multiple_choice_answer"]
-            answers = [ a["answer"] for a in annotation["answers"]]
+            answers = [a["answer"] for a in annotation["answers"]]
             answer_type = annotation["answer_type"]
 
             if preprocess_answers:

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-import os
 import tensorflow as tf
 from distutils.util import strtobool
 import numpy as np
@@ -12,8 +10,6 @@ from neural_toolbox import resnet
 
 from vqa.data_provider.vqa_dataset import VQADataset
 from vqa.data_provider.vqa_batchifier import VQABatchifier
-
-
 
 parser = argparse.ArgumentParser('Feature extractor! ')
 
@@ -28,14 +24,13 @@ parser.add_argument("-feature_name", type=str, default="block4", help="Pick the 
 parser.add_argument("-resnet_version", type=int, default=152, choices=[50, 101, 152], help="Pick the resnet version [50/101/152]")
 
 parser.add_argument("-subtract_mean", type=lambda x:bool(strtobool(x)), default="True", help="Preprocess the image by substracting the mean")
-parser.add_argument("-img_size", type=int, default=224, help="image size (pixels)")
+parser.add_argument("-img_size", type=int, default=448, help="image size (pixels)")
 parser.add_argument("-batch_size", type=int, default=64, help="Batch size to extract features")
 
 parser.add_argument("-gpu_ratio", type=float, default=1., help="How many GPU ram is required? (ratio)")
 parser.add_argument("-no_thread", type=int, default=2, help="No thread to load batch")
 
 args = parser.parse_args()
-
 
 # define image
 if args.subtract_mean:
@@ -56,14 +51,14 @@ print("Create network...")
 ft_output = resnet.create_resnet(images, resnet_out=args.feature_name, resnet_version=args.resnet_version, is_training=False)
 
 extract_features(
-    img_input = images,
-    ft_output = ft_output,
-    dataset_cstor = VQADataset,
-    dataset_args = {"folder": args.data_dir, "year": args.year, "image_builder":image_builder},
-    batchifier_cstor = VQABatchifier,
-    out_dir = args.out_dir,
-    set_type = args.set_type,
+    img_input=images,
+    ft_output=ft_output,
+    dataset_cstor=VQADataset,
+    dataset_args={"folder": args.data_dir, "year": args.year, "image_builder": image_builder},
+    batchifier_cstor=VQABatchifier,
+    out_dir=args.out_dir,
+    set_type=args.set_type,
     network_ckpt=args.ckpt,
-    batch_size = args.batch_size,
-    no_threads = args.no_thread,
-    gpu_ratio = args.gpu_ratio)
+    batch_size=args.batch_size,
+    no_threads=args.no_thread,
+    gpu_ratio=args.gpu_ratio)

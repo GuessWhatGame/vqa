@@ -5,11 +5,9 @@ from generic.utils.file_handlers import pickle_dump
 
 from vqa.data_provider.vqa_dataset import VQADataset
 
-
 # wget http://nlp.stanford.edu/data/glove.42B.300d.zip
 
 if __name__ == '__main__':
-
 
     parser = argparse.ArgumentParser('Creating GLOVE dictionary.. Please first download http://nlp.stanford.edu/data/glove.42B.300d.zip')
 
