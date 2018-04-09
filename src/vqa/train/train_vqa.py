@@ -30,27 +30,31 @@ parser = argparse.ArgumentParser('VQA network baseline!')
 
 parser.add_argument("-data_dir", type=str, help="Directory with data")
 parser.add_argument("-img_dir", type=str, help="Directory with image")
-parser.add_argument("-img_buf", type=lambda x:bool(strtobool(x)), default="False", help="Store image in memory (faster but require a lot of RAM)")
+parser.add_argument("-config", type=str, help='Config file')
+parser.add_argument("-dict_file", type=str, default="dict.json", help="Dictionary file name")
+parser.add_argument("-glove_file", type=str, default="glove_dict.pkl", help="Glove file name")
+parser.add_argument("-exp_dir", type=str, help="Directory in which experiments are stored")
+
 parser.add_argument("-year", type=str, help="VQA release year (either 2014 or 2017)")
 parser.add_argument("-test_set", type=str, default="test-dev", help="VQA release year (either 2014 or 2017)")
-parser.add_argument("-exp_dir", type=str, help="Directory in which experiments are stored")
-parser.add_argument("-config", type=str, help='Config file')
+
 parser.add_argument("-load_checkpoint", type=str, help="Load model parameters from specified checkpoint")
-parser.add_argument("-continue_exp", type=lambda x:bool(strtobool(x)), default="False", help="Continue previously started experiment?")
-parser.add_argument("-no_thread", type=int, default=1, help="No thread to load batch")
+parser.add_argument("-continue_exp", type=lambda x: bool(strtobool(x)), default="False", help="Continue previously started experiment?")
+
+parser.add_argument("-no_thread", type=int, default=2, help="No thread to load batch")
 parser.add_argument("-no_gpu", type=int, default=1, help="How many gpus?")
 parser.add_argument("-gpu_ratio", type=float, default=0.95, help="How many GPU ram is required? (ratio)")
 
 args = parser.parse_args()
 
-config, exp_identifier, save_path = load_config(args.config, args.exp_dir)
+config, exp_identifier, save_path = load_config(args.config, args.exp_dir, args=args)
 logger = logging.getLogger()
 
 
 # Load config
 resnet_version = config['model']["image"].get('resnet_version', 50)
 finetune = config["model"]["image"].get('finetune', list())
-use_glove = config["model"]["glove"]
+use_glove = config["model"]["question"]["glove"]
 batch_size = config['optimizer']['batch_size']
 no_epoch = config["optimizer"]["no_epoch"]
 merge_dataset = config.get("merge_dataset", False)
@@ -65,7 +69,7 @@ use_process = image_builder.require_multiprocess()
 
 # Load dictionary
 logger.info('Loading dictionary..')
-tokenizer = VQATokenizer(os.path.join(args.data_dir, config["dico_name"]))
+tokenizer = VQATokenizer(args.dict_file)
 
 
 # Load data
@@ -82,7 +86,7 @@ if merge_dataset:
 glove = None
 if use_glove:
     logger.info('Loading glove..')
-    glove = GloveEmbeddings(os.path.join(args.data_dir, config["glove_name"]))
+    glove = GloveEmbeddings(args.glove_file)
 
 
 # Build Network
@@ -108,7 +112,7 @@ assert len(networks) > 0, "you need to set no_gpu > 0 even if you are using CPU"
 # Build Optimizer
 logger.info('Building optimizer..')
 #optimizer, outputs = create_multi_gpu_optimizer(networks, config, finetune=finetune)
-optimizer, outputs = create_optimizer(networks[0], config, finetune=finetune)
+optimizer, outputs = create_optimizer(networks[0], config["optimizer"], finetune=finetune)
 
 
 ###############################
@@ -190,7 +194,6 @@ with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placem
         logger.info("Validation loss: {}".format(valid_loss))
         logger.info("Validation accuracy: {}".format(valid_accuracy))
         logger.info(vqa_eval_listener.get_accuracy())
-
 
         #TODO create a better ckpt manager
         if valid_accuracy >= best_val_acc:

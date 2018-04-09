@@ -115,18 +115,11 @@ class VQANetwork_FiLM(ResnetModel):
                 if config["fusion"]["mode"] == "none":
                     language_embedding = None
 
-                self.vqa_embedding, _ = get_fusion_mechanism(input1=self.visual_embedding,
-                                                             input2=language_embedding,
-                                                             config=config["fusion"],
-                                                             dropout_keep=dropout_keep,
-                                                             reuse=reuse)
-
-            if config["fusion"]["visual_dialogue_projection"] > 0:
-
-                self.vqa_embedding = tfc_layers.fully_connected(self.vqa_embedding,
-                                                                num_outputs=config["fusion"]["visual_dialogue_projection"],
-                                                                activation_fn=tf.nn.relu,
-                                                                scope='visual_dialogue_projection')
+                self.vqa_embedding = get_fusion_mechanism(input1=self.visual_embedding,
+                                                          input2=language_embedding,
+                                                          config=config["fusion"],
+                                                          dropout_keep=dropout_keep,
+                                                          reuse=reuse)
 
             #####################
             #   FINAL LAYER
@@ -134,13 +127,17 @@ class VQANetwork_FiLM(ResnetModel):
 
             with tf.variable_scope("classifier", reuse=reuse):
 
-                self.hidden_state = tfc_layers.fully_connected(self.vqa_embedding,
-                                                               num_outputs=config["classifier"]["no_mlp_units"],
-                                                               activation_fn=tf.nn.relu,
-                                                               reuse=reuse,
-                                                               scope="classifier_hidden_layer")
+                if config["classifier"]["no_mlp_units"] > 0:
+                    self.hidden_state = tfc_layers.fully_connected(self.vqa_embedding,
+                                                                   num_outputs=config["classifier"]["no_mlp_units"],
+                                                                   activation_fn=tf.nn.relu,
+                                                                   reuse=reuse,
+                                                                   scope="classifier_hidden_layer")
 
-                self.hidden_state = tf.nn.dropout(self.hidden_state, dropout_keep)
+                    self.hidden_state = tf.nn.dropout(self.hidden_state, dropout_keep)
+                else:
+                    self.hidden_state = self.vqa_embedding
+
                 self.out = tfc_layers.fully_connected(self.hidden_state,
                                                       num_outputs=no_answers,
                                                       activation_fn=None,

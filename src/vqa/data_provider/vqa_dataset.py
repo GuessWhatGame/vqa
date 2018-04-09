@@ -82,7 +82,7 @@ class VQADataset(AbstractDataset):
             assert full_annotations["data_subtype"].startswith(which_set)
 
             if full_annotations["info"]["version"] == "2.0":
-                assert full_annotations["info"]["year"] == year
+                assert full_annotations["info"]["year"] == int(year)
 
         except FileNotFoundError:
             print("No annotations file... (Test dataset)")
