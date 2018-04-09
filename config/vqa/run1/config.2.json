@@ -1,5 +1,5 @@
 {
-  "name" : "Baseline",
+  "name" : "FiLM (cell): +FiLM, +attention + basic +no_cell",
 
   "model": {
 
@@ -16,28 +16,61 @@
 
     "classifier":
     {
-      "no_mlp_units": 0
+      "no_mlp_units": 800
     },
+
+    "film_input":
+    {
+
+      "reading_unit": {
+        "reading_unit_type" : "only_question"
+      }
+
+    },
+
 
     "image": {
       "image_input": "conv",
       "dim": [14, 14, 1024],
       "normalize": false,
 
+      "attention" : {
+        "mode": "none"
+      }
+
+    },
+
+    "film_block":
+    {
+      "stem" : {
+        "spatial_location" : true,
+        "conv_out": 256,
+        "conv_kernel": [3,3]
+      },
+
+      "resblock" : {
+        "feature_size" : [128, 128, 128, 128],
+        "spatial_location" : true,
+        "kernel1" : [1,1],
+        "kernel2" : [3,3]
+      },
+
+      "head" : {
+        "spatial_location" : true,
+        "conv_out": 256,
+        "conv_kernel": [1,1],
+
         "attention" : {
           "mode": "glimpse",
           "no_attention_mlp" : 256,
           "no_glimpses" : 2
         }
-
+      }
     },
 
     "fusion": {
-        "mode" : "vis",
-        "projection_size" : 1024
+        "mode" : "none"
     },
-
-
 
     "loss" : "soft",
     "dropout_keep_prob" : 0.5
